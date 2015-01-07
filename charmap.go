@@ -16,6 +16,8 @@ var codecsMap = make(map[string]codec)
 type codec interface {
 	Encode(data string) (string, error)
 	Decode(data string) (string, error)
+	EncodeToBuffer(s []byte) (*bytes.Buffer, error)
+	DecodeToBuffer(s []byte) (*bytes.Buffer, error)
 }
 
 func register(c codec, name string, aliases ...string) {
@@ -125,6 +127,65 @@ func mapRunesToBytes(cm map[rune]byte, data string) (result string, err error) {
 	return result, err
 }
 
+/*------------------------------------------*/
+/*Section for buffer support*/
+func EncodeToBuffer(data []byte, encoding string) (*bytes.Buffer, error) {
+	encoding = getCodecForEncoding(encoding)
+
+	if codec, ok := codecsMap[encoding]; ok {
+		result, err := codec.EncodeToBuffer(data)
+		return result, err
+	}
+
+	return bytes.NewBuffer(data), ErrUnknownEncoding
+}
+
+func DecodeToBuffer(data []byte, encoding string) (*bytes.Buffer, error) {
+	encoding = getCodecForEncoding(encoding)
+
+	if codec, ok := codecsMap[encoding]; ok {
+		result, err := codec.DecodeToBuffer(data)
+		return result, err
+	}
+
+	return bytes.NewBuffer(data), ErrUnknownEncoding
+}
+
+func mapBytesToRunesBuffer(cm map[byte]rune, data []byte) (result *bytes.Buffer, err error) {
+	size := len(data)
+	result = bytes.NewBuffer(make([]byte, 0, size))
+
+	for i := 0; i < size; i++ {
+		c := data[i]
+		if r, ok := cm[c]; ok {
+			result.WriteRune(r)
+		} else {
+			err = ErrInvalidCodepoint
+			result.WriteRune(utf8.RuneError)
+		}
+	}
+
+	return result, err
+}
+
+func mapRunesToBytesBuffer(cm map[rune]byte, data []byte) (result *bytes.Buffer, err error) {
+	size := len(data)
+	result = bytes.NewBuffer(make([]byte, 0, size/2))
+
+	for _, r := range data {
+		if c, ok := cm[rune(r)]; ok {
+			result.WriteByte(c)
+		} else {
+			err = ErrInvalidCodepoint
+			result.WriteByte('?')
+		}
+	}
+
+	return result, err
+}
+
+/*End buffer support section*/
+
 type codecMap8Bit struct {
 	EncodeMap map[rune]byte
 	DecodeMap map[byte]rune
@@ -136,4 +197,12 @@ func (c *codecMap8Bit) Encode(s string) (string, error) {
 
 func (c *codecMap8Bit) Decode(s string) (string, error) {
 	return mapBytesToRunes(c.DecodeMap, s)
+}
+
+func (c *codecMap8Bit) EncodeToBuffer(s []byte) (*bytes.Buffer, error) {
+	return mapRunesToBytesBuffer(c.EncodeMap, s)
+}
+
+func (c *codecMap8Bit) DecodeToBuffer(s []byte) (*bytes.Buffer, error) {
+	return mapBytesToRunesBuffer(c.DecodeMap, s)
 }

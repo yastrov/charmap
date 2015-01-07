@@ -129,3 +129,28 @@ func TestList(t *testing.T) {
 		t.Error("list encoding: encodings not found in list")
 	}
 }
+
+func TestDecodeToBuffer(t *testing.T) {
+	pana_cp1251 := "\xC2\x20\xF7\xE0\xF9\xE0\xF5\x20\xFE\xE3\xE0\x20\xE6\xE8\xEB\x20\xE1\xFB\x20\xF6\xE8\xF2\xF0\xF3\xF1\x3F\x20\xC4\xE0\x2C\x20\xED\xEE\x20\xF4\xE0\xEB\xFC\xF8\xE8\xE2\xFB\xE9\x20\xFD\xEA\xE7\xE5\xEC\xEF\xEB\xFF\xF0\x21"
+	pana_utf8 := "В чащах юга жил бы цитрус? Да, но фальшивый экземпляр!"
+
+	test_cp1251, err := DecodeToBuffer([]byte(pana_cp1251), "cp1251")
+	if err != nil {
+		t.Error("decoding from cp1251: wrong error value")
+	}
+	if test_cp1251.String() != pana_utf8 {
+		t.Error("decoding from cp1251: wrong result")
+	}
+}
+func TestEncodeToBuffer(t *testing.T) {
+	pana_cp1251 := "\xC2\x20\xF7\xE0\xF9\xE0\xF5\x20\xFE\xE3\xE0\x20\xE6\xE8\xEB\x20\xE1\xFB\x20\xF6\xE8\xF2\xF0\xF3\xF1\x3F\x20\xC4\xE0\x2C\x20\xED\xEE\x20\xF4\xE0\xEB\xFC\xF8\xE8\xE2\xFB\xE9\x20\xFD\xEA\xE7\xE5\xEC\xEF\xEB\xFF\xF0\x21"
+	pana_utf8 := "В чащах юга жил бы цитрус? Да, но фальшивый экземпляр!"
+
+	test_cp1251, err := EncodeToBuffer([]byte(pana_utf8), "cp1251")
+	if err != nil {
+		t.Error("decoding from cp1251: wrong error value")
+	}
+	if test_cp1251.String() != pana_cp1251 {
+		t.Error("decoding from cp1251: wrong result")
+	}
+}
