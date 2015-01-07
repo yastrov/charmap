@@ -1,4 +1,4 @@
-// Package charmap implements functions for character encodings conversion. 
+// Package charmap implements functions for character encodings conversion.
 // A number of 8bit encodings are supported. The package provides Encode and
 // Decode functions to convert a string from and to UTF-8 respectively.
 package charmap
@@ -37,18 +37,24 @@ func List() []string {
 	return list
 }
 
-// Encode converts a string from UTF-8 to the specified encoding. Returns converted string. 
-// If the input string contains illegal characters for the specified encoding,
-// these characters will be replaced with a substitute character ('?') and
-// ErrInvalidCodepoint will be returned in error value.
-// If the specified encoding is unknown, it will return the input string and ErrUnknownEncoding
-func Encode(data string, encoding string) (string, error) {
+func getCodecForEncoding(encoding string) string {
 	encoding = strings.ToUpper(encoding)
 	encoding = strings.Replace(encoding, "_", "-", -1)
 
 	if name, ok := aliasesMap[encoding]; ok {
 		encoding = name
 	}
+
+	return encoding
+}
+
+// Encode converts a string from UTF-8 to the specified encoding. Returns converted string.
+// If the input string contains illegal characters for the specified encoding,
+// these characters will be replaced with a substitute character ('?') and
+// ErrInvalidCodepoint will be returned in error value.
+// If the specified encoding is unknown, it will return the input string and ErrUnknownEncoding
+func Encode(data string, encoding string) (string, error) {
+	encoding = getCodecForEncoding(encoding)
 
 	if codec, ok := codecsMap[encoding]; ok {
 		result, err := codec.Encode(data)
@@ -58,18 +64,13 @@ func Encode(data string, encoding string) (string, error) {
 	return data, ErrUnknownEncoding
 }
 
-// Decode converts a string from the specified encoding to UTF-8.  Returns converted string. 
+// Decode converts a string from the specified encoding to UTF-8.  Returns converted string.
 // If the input string contains illegal characters for the specified encoding,
 // these characters will be replaced with a substitute character (utf8.RuneError) and
 // ErrInvalidCodepoint will be returned in error value.
 // If the specified encoding is unknown, it will return the input string and ErrUnknownEncoding
 func Decode(data string, encoding string) (string, error) {
-	encoding = strings.ToUpper(encoding)
-	encoding = strings.Replace(encoding, "_", "-", -1)
-
-	if name, ok := aliasesMap[encoding]; ok {
-		encoding = name
-	}
+	encoding = getCodecForEncoding(encoding)
 
 	if codec, ok := codecsMap[encoding]; ok {
 		result, err := codec.Decode(data)
@@ -82,7 +83,7 @@ func Decode(data string, encoding string) (string, error) {
 // simple 8bit codecs definition support
 
 func reverseByteRuneMap(m map[byte]rune) (newmap map[rune]byte) {
-	newmap = make(map[rune]byte)
+	newmap = make(map[rune]byte, len(m))
 	for k, v := range m {
 		newmap[v] = k
 	}
